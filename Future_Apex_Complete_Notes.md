@@ -1,6 +1,5 @@
 # Future Apex in Salesforce
 ### Complete Study Notes + 5-Year Developer Interview Q&A
-> **Asynchronous Apex Series · Day 10.4**
 
 ---
 
