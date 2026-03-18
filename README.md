@@ -12,11 +12,11 @@ This repository contains structured notes across the following Salesforce topics
 
 | File | Topic | Day |
 |------|-------|-----|
-| `Future_Apex_Complete_Notes.md` | Future Methods — syntax, limits, Mixed DML, interview Q&A | Day 10.4 |
-| `Queueable_Apex_Complete_Notes.md` | Queueable Apex — chaining, sObject params, monitoring, interview Q&A | Day 11 |
-| `Batch_Apex_Comprehensive_Notes.md` | Batch Apex — Batchable interface, Stateful, AllowsCallouts, interview Q&A | Day 11.1–11.3 |
-| `Queueable_Scheduled_Apex_Notes.md` | Queueable & Scheduled Apex — combined deep dive, CRON expressions | Day 11 / 11.3 |
-| `Scheduled_Apex_Comprehensive_Notes.md` | Scheduled Apex — CRON guide, sub-hourly scheduling, CronTrigger, interview Q&A | Day 11.3 |
+| `Future_Apex_Complete_Notes.md` | Future Methods — syntax, limits, Mixed DML, interview Q&A | 
+| `Queueable_Apex_Complete_Notes.md` | Queueable Apex — chaining, sObject params, monitoring, interview Q&A |
+| `Batch_Apex_Comprehensive_Notes.md` | Batch Apex — Batchable interface, Stateful, AllowsCallouts, interview Q&A |
+| `Queueable_Scheduled_Apex_Notes.md` | Queueable & Scheduled Apex — combined deep dive, CRON expressions | 
+| `Scheduled_Apex_Comprehensive_Notes.md` | Scheduled Apex — CRON guide, sub-hourly scheduling, CronTrigger, interview Q&A | 
 
 ### 🔧 DevOps & Version Control
 
