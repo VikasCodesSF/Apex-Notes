@@ -10,8 +10,8 @@ This repository contains structured notes across the following Salesforce topics
 
 ### ⚡ Asynchronous Apex Series
 
-| File | Topic | Day |
-|------|-------|-----|
+| File | Topic |
+|------|-------|
 | `Future_Apex_Complete_Notes.md` | Future Methods — syntax, limits, Mixed DML, interview Q&A | 
 | `Queueable_Apex_Complete_Notes.md` | Queueable Apex — chaining, sObject params, monitoring, interview Q&A |
 | `Batch_Apex_Comprehensive_Notes.md` | Batch Apex — Batchable interface, Stateful, AllowsCallouts, interview Q&A |
