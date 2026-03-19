@@ -1,0 +1,707 @@
+# Apex Collections — Deep Dive
+### List · Set · Map — All Methods · Patterns · Real-World Usage · Interview Q&A
+
+---
+
+## 1. Why Collections?
+
+Without collections, storing N values requires N separate variables — impossible to scale. A collection is a single variable that holds multiple values of the same (or compatible) data type.
+
+```apex
+// Without Collections — does NOT scale
+String name1 = 'Raj';
+String name2 = 'Priya';
+String name3 = 'Amit';
+// ... nameN — impossible for dynamic data
+
+// With Collections — scalable
+List<String> names = new List<String>{'Raj','Priya','Amit'};
+// Can hold any number of values in one variable
+```
+
+### Three Types of Collections
+
+| Type | Ordered? | Duplicates? | Access By |
+|------|----------|:-----------:|-----------|
+| **List** | Yes — insertion order | Allowed | Index (0-based) |
+| **Set** | No — random order | Not allowed | Contains check only |
+| **Map** | No — by key | Keys: No, Values: Yes | Key lookup |
+
+---
+
+## 2. List — Complete Guide
+
+A List is an **ordered** collection of elements. Elements maintain insertion order and can be accessed by their zero-based index. Duplicates are allowed. The most commonly used collection in Apex.
+
+### 2.1 Index Rules
+
+- **First Index:** always `0`
+- **Last Index:** `size() - 1`
+- Accessing an index that doesn't exist throws: `System.ListException: List index out of bounds`
+
+```apex
+// 4 elements → Indices 0, 1, 2, 3
+// Last Index = 4 - 1 = 3
+List<String> fruits = new List<String>{'Apple','Mango','Orange','Banana'};
+//                                       [0]     [1]     [2]      [3]
+
+System.debug(fruits.get(0));  // Apple
+System.debug(fruits.get(3));  // Banana
+// fruits.get(4) → ListException: List index out of bounds: 4
+```
+
+---
+
+### 2.2 Three Ways to Create a List
+
+```apex
+// Way 1: Declare + Allocate (empty list, size = 0)
+List<String> fruitList = new List<String>();
+
+// Way 2: Declare + Allocate + Assign values inline
+List<String>  fruitList = new List<String>{'Apple','Banana','Orange'};
+List<Integer> numbers   = new List<Integer>{1, 2, 4, 5, 3};
+
+// Way 3: Declare first, then allocate later
+List<String> fruitList;                              // null at this point
+fruitList = new List<String>();                      // now allocated, empty
+fruitList = new List<String>{'Apple','Banana'};      // reallocated with values
+
+// Real-world: sObject list (for DML operations)
+List<Account> accountList = new List<Account>();
+List<Account> accounts    = [SELECT Id, Name FROM Account LIMIT 100];
+```
+
+---
+
+### 2.3 All Key List Methods
+
+| Method | Description & Example |
+|--------|----------------------|
+| **`add(element)`** | Appends element to end. `fruitList.add('Mango');` |
+| **`add(index, element)`** | Inserts at specific index, shifts rest right. `fruitList.add(1,'Guava');` |
+| **`set(index, element)`** | Replaces element at index. `fruitList.set(0,'Watermelon');` |
+| **`get(index)`** | Returns element at index. `String f = fruitList.get(2);` |
+| **`remove(index)`** | Removes element at index, shifts rest left. `fruitList.remove(0);` |
+| **`size()`** | Returns total number of elements. `Integer sz = fruitList.size();` |
+| **`isEmpty()`** | Returns true if no elements. `Boolean empty = fruitList.isEmpty();` |
+| **`clear()`** | Removes ALL elements. Size becomes 0. `fruitList.clear();` |
+| **`sort()`** | Sorts in ascending order (primitives). `numberList.sort();` |
+| **`contains(element)`** | Returns true if element exists. `fruitList.contains('Apple');` |
+| **`clone()`** | Returns shallow copy. `List<String> copy = fruitList.clone();` |
+| **`addAll(list or set)`** | Adds all elements from another list/set. `list1.addAll(list2);` |
+| **`indexOf(element)`** | Returns first index of element, or `-1`. `fruitList.indexOf('Mango');` |
+| **`subList(from, to)`** | Returns portion from index `from` to `to-1`. `fruitList.subList(1,3);` |
+
+---
+
+### 2.4 Hands-On Code Walkthrough
+
+```apex
+List<String> fruits = new List<String>();
+fruits.add('Grapes');  // Index 0
+fruits.add('Mango');   // Index 1
+fruits.add('Apple');   // Index 2
+fruits.add('Grapes');  // Index 3 — duplicate allowed!
+fruits.add('Banana');  // Index 4
+
+// Size = 5, Last Index = 4
+System.debug(fruits);           // [Grapes, Mango, Apple, Grapes, Banana]
+
+fruits.set(1, 'Guava');         // replace Mango with Guava
+System.debug(fruits.get(2));    // Apple
+System.debug(fruits.size());    // 5
+System.debug(fruits.isEmpty()); // false
+
+fruits.clear();
+System.debug(fruits.isEmpty()); // true
+// fruits.get(0) now → ListException! List is empty
+```
+
+---
+
+### 2.5 When to Use a List
+
+- Ordering of elements matters (insertion order preserved)
+- Need index-based access (`get`/`set` by position)
+- Sorting is required
+- Storing SOQL query results — always returns a `List`
+- Performing DML on multiple records — `insert`/`update`/`delete` requires a `List`
+- Multi-dimensional data (`List` of `Lists` = matrix)
+
+> ⚠️ Never access a List index that doesn't exist. Always check `size() > 0` and use the correct index range (`0` to `size()-1`).
+
+---
+
+## 3. Set — Complete Guide
+
+A Set is an **unordered** collection of **unique** elements. No duplicates allowed. No index access. Extremely efficient for membership checks and deduplication.
+
+### 3.1 Key Characteristics
+
+- **Unordered** — the iteration order is not guaranteed and may differ from insertion order
+- **No duplicates** — adding a duplicate is silently ignored (no error)
+- **No index access** — cannot use `get(0)`, `set(1,x)`, etc.
+- **Internally uses hashing** — very fast O(1) for `contains()` checks
+
+---
+
+### 3.2 Three Ways to Create a Set
+
+```apex
+// Way 1: Empty Set
+Set<String> colorsSet = new Set<String>();
+
+// Way 2: With initial values — duplicates are auto-removed
+Set<String> colorsSet = new Set<String>{'Red','Black','Blue','Green','Black'};
+// Result: {Red, Black, Blue, Green} — 'Black' duplicate silently dropped
+
+// Way 3: Declare only
+Set<String> colorsSet;
+colorsSet = new Set<String>();
+
+// Common real-world pattern: collect unique IDs
+Set<Id> accountIdSet = new Set<Id>();
+for (Contact c : contactList) {
+    accountIdSet.add(c.AccountId);  // auto-deduplication!
+}
+```
+
+---
+
+### 3.3 All Key Set Methods
+
+| Method | Description & Example |
+|--------|----------------------|
+| **`add(element)`** | Adds element. Silently ignored if duplicate. `colorsSet.add('Yellow');` |
+| **`contains(element)`** | Returns true/false. `colorsSet.contains('Red');` → `true` |
+| **`remove(value)`** | Removes specific element. `colorsSet.remove('Blue');` |
+| **`addAll(set or list)`** | Adds all elements from another collection. `set1.addAll(list1);` |
+| **`removeAll(set or list)`** | Removes all elements found in given collection. |
+| **`retainAll(set or list)`** | Keeps only elements that exist in both (intersection). |
+| **`size()`** | Returns total unique element count. `colorsSet.size();` |
+| **`isEmpty()`** | Returns true if empty. `colorsSet.isEmpty();` |
+| **`clear()`** | Removes all elements. `colorsSet.clear();` |
+| **`clone()`** | Returns shallow copy of the set. |
+| **`equals(anotherSet)`** | Returns true if both sets contain same elements. |
+
+---
+
+### 3.4 Hands-On Code Walkthrough
+
+```apex
+// Deduplication in action
+Set<String> colors = new Set<String>{'black','Red','Black','Blue','Green','Black'};
+System.debug(colors);               // {black, Red, Black, Blue, Green} — 2 duplicates removed
+System.debug(colors.contains('Black')); // true (case-sensitive!)
+System.debug(colors.size());        // 5 unique values
+
+// Adding from another Set
+Set<String> fruits = new Set<String>();
+fruits.add('Apple'); fruits.add('Banana'); fruits.add('Mango');
+colors.addAll(fruits);
+System.debug(colors);  // all colors + fruits combined
+
+// Real-world: Convert Set to List for DML
+List<Account> accountList = new List<Account>();
+accountList.addAll(accountSet);  // Set → List for insert
+insert accountList;
+```
+
+---
+
+### 3.5 When to Use a Set
+
+- Uniqueness must be guaranteed — record IDs, email addresses, phone numbers
+- Fast membership check — "does this ID already exist?" using `contains()`
+- Deduplication before SOQL `WHERE IN` queries
+- Collecting parent IDs from a list of child records in triggers
+
+> 📌 To use a Set in a SOQL `WHERE IN` clause, you can pass it directly: `[SELECT Id FROM Account WHERE Id IN :accountIdSet]` — no need to convert to List first.
+
+---
+
+## 4. Map — Complete Guide
+
+A Map stores data as **key-value pairs**. Each key is unique (like a Set). Values can be duplicates. Map is the **MOST POWERFUL** collection in Apex — essential for governor limit optimization.
+
+### 4.1 Key Characteristics
+
+- **Keys are unique** — adding a duplicate key OVERWRITES the existing value (no error)
+- **Values can be duplicates**
+- **Map = Set (keys) + List (values)** conceptually
+- **O(1) lookup** — retrieving a value by key is extremely fast
+- Keys and values can be of ANY data type including complex types
+
+---
+
+### 4.2 Ways to Create a Map
+
+```apex
+// Way 1: Empty Map, add via put()
+Map<String, Integer> accountMap = new Map<String, Integer>();
+accountMap.put('Acme',        10000);
+accountMap.put('XYZ Corp',     5000);
+accountMap.put('ABC Company',  7500);
+
+// Way 2: Inline initialization with =>
+Map<String, Integer> accountMap = new Map<String, Integer>{
+    'Acme'     => 10000,
+    'XYZ Corp' => 5000
+};
+
+// Way 3: From SOQL — Map<Id, SObject> pattern (CRITICAL for triggers!)
+Map<Id, Account> accountMap = new Map<Id, Account>(
+    [SELECT Id, Name, Phone FROM Account WHERE Id IN :idSet]
+);
+// Key = Account.Id, Value = Account record
+```
+
+---
+
+### 4.3 All Key Map Methods
+
+| Method | Description & Example |
+|--------|----------------------|
+| **`put(key, value)`** | Adds/overwrites key-value pair. `accountMap.put('Acme', 10000);` |
+| **`get(key)`** | Returns value for key, or `null` if not found. `accountMap.get('Acme');` |
+| **`containsKey(key)`** | Returns true/false. `accountMap.containsKey('Acme');` → `true` |
+| **`keySet()`** | Returns `Set<KeyType>` of all keys. `Set<String> keys = map.keySet();` |
+| **`values()`** | Returns `List<ValueType>` of all values. `List<Integer> vals = map.values();` |
+| **`remove(key)`** | Removes key-value pair. `accountMap.remove('Acme');` |
+| **`putAll(anotherMap)`** | Merges another map into this one. `map1.putAll(map2);` |
+| **`size()`** | Total number of key-value pairs. `accountMap.size();` |
+| **`isEmpty()`** | Returns true if no entries. `accountMap.isEmpty();` |
+| **`clear()`** | Removes all entries. `accountMap.clear();` |
+| **`clone()`** | Shallow copy of the map. |
+| **`equals(anotherMap)`** | True if both maps have identical key-value pairs. |
+
+---
+
+### 4.4 Map Value Types — Simple to Complex
+
+```apex
+// Simple: String → String
+Map<String, String> countryCurrencies = new Map<String, String>();
+countryCurrencies.put('India', 'INR');
+countryCurrencies.put('Japan', 'YEN');
+countryCurrencies.put('USA',   'USD');
+String inr = countryCurrencies.get('India');  // 'INR'
+
+// Complex: String → List<String> (one key → multiple values)
+Map<String, List<String>> countryStates = new Map<String, List<String>>();
+List<String> indiaStates = new List<String>{'UP','Delhi','MH','MP','HYD'};
+countryStates.put('India', indiaStates);
+
+// Add a new state to existing entry — 5-step pattern
+if (countryStates.containsKey('India')) {          // Step 1: key exists?
+    List<String> temp = countryStates.get('India'); // Step 2: get current value
+    temp.add('Gujarat');                            // Step 3: modify value
+    countryStates.put('India', temp);               // Step 4: put back
+}
+System.debug(countryStates);                        // Step 5: print
+
+// Most powerful: Id → sObject (used in every trigger)
+Map<Id, Account> accMap = new Map<Id, Account>(
+    [SELECT Id, Name, Phone FROM Account WHERE Id IN :idSet]
+);
+Account acc = accMap.get(someId);  // O(1) lookup — no nested SOQL!
+```
+
+---
+
+### 4.5 Iterating Over a Map
+
+```apex
+Map<String, Integer> employees = new Map<String, Integer>{
+    'Acme'       => 238,
+    'Acme Inc'   => 24538,
+    'United Oil' => 25538
+};
+
+// Iterate over keys
+for (String key : employees.keySet()) {
+    System.debug(key + ' has ' + employees.get(key) + ' employees');
+}
+
+// Iterate over values only
+for (Integer count : employees.values()) {
+    System.debug('Count: ' + count);
+}
+```
+
+---
+
+### 4.6 The Safe Map Update Pattern *(Check Before Put)*
+
+```apex
+// Always check containsKey() before adding to avoid overwriting
+Map<String, String> countryMap = new Map<String, String>();
+countryMap.put('India', 'INR');
+countryMap.put('Japan', 'YEN');
+
+// Safe add — only add USA if it doesn't already exist
+if (!countryMap.containsKey('USA')) {
+    countryMap.put('USA', 'USD');
+} else {
+    System.debug('USA already in map — skipping to avoid overwrite');
+}
+```
+
+---
+
+### 4.7 When to Use a Map
+
+- Key-value lookup needed — "get account for this ID"
+- **Avoid SOQL inside loops** (the #1 use case in triggers)
+- Group records by a field (e.g. Group Contacts by `AccountId`)
+- Counting or aggregating — `Map<String, Integer>` for frequency count
+- Caching — store expensive query results in a Map for repeated access
+
+---
+
+## 5. The Map Pattern — Governor Limit Optimization
+
+The **single most important** Collection pattern in Salesforce development. Using a Map to eliminate SOQL queries inside loops is tested in almost every Apex interview.
+
+### ✗ Bad Pattern — SOQL Inside Loop *(Governor Limit Violation)*
+
+```apex
+// WRONG — This hits governor limit: 101 SOQL queries for 101 contacts
+List<Contact> contacts = [SELECT Id, AccountId FROM Contact LIMIT 200];
+
+for (Contact c : contacts) {
+    // SOQL INSIDE LOOP — each iteration = 1 query = DANGER
+    Account acc = [SELECT Id, Name, Phone FROM Account WHERE Id = :c.AccountId];
+    System.debug(acc.Name);
+}
+
+// If contacts has 101+ records → System.LimitException: Too many SOQL queries: 101
+```
+
+### ✓ Correct Pattern — `Map<Id, SObject>` Outside Loop
+
+```apex
+// CORRECT — Only 2 SOQL queries regardless of record count
+
+// Step 1: Collect all parent IDs into a Set (unique, no duplicates)
+List<Contact> contacts = [SELECT Id, AccountId, Name FROM Contact LIMIT 200];
+Set<Id> accountIdSet = new Set<Id>();
+for (Contact c : contacts) {
+    accountIdSet.add(c.AccountId);
+}
+
+// Step 2: Single SOQL → store in Map for O(1) lookup
+Map<Id, Account> accountMap = new Map<Id, Account>(
+    [SELECT Id, Name, Phone FROM Account WHERE Id IN :accountIdSet]
+);
+
+// Step 3: Loop and lookup from Map — NO more SOQL inside loop
+for (Contact c : contacts) {
+    Account acc = accountMap.get(c.AccountId);  // instant lookup
+    if (acc != null) {
+        System.debug('Contact: ' + c.Name + ' | Account: ' + acc.Name);
+    }
+}
+
+// Result: Only 2 total SOQL queries — scales to any record count!
+```
+
+> 📌 This pattern is the foundation of bulkified Apex triggers. In any interview, when asked **"how do you avoid governor limits in a trigger?"**, this is the answer.
+
+---
+
+## 6. Collections — Full Comparison Reference
+
+| Feature | List | Set | Map |
+|---------|:----:|:---:|:---:|
+| **Interface** | `List<T>` | `Set<T>` | `Map<K,V>` |
+| **Order** | Insertion order | Random/hash order | Random/hash order |
+| **Duplicates** | Allowed | Not allowed | Keys: No, Values: Yes |
+| **Null values** | Allowed | One null allowed | Key: one null, Value: any |
+| **Index access** | Yes — `get(i)`, `set(i,v)` | No | By key — `get(key)` |
+| **Membership check** | `contains(el)` — O(n) | `contains(el)` — O(1) | `containsKey(k)` — O(1) |
+| **DML operations** | Required — `insert List` | Convert to List first | Get `.values()` as List |
+| **SOQL return type** | Yes — always a `List` | No | `Map<Id,SObj>` constructor |
+| **Memory overhead** | Lowest | Medium | Highest |
+| **Best use case** | Ordered data, SOQL results | Unique IDs, dedup | Key-value lookup, triggers |
+
+---
+
+## 7. Interview Questions — 5 Years Experience Level
+
+> **INTERVIEW GUIDE**
+> These questions test deep, production-level knowledge of Apex Collections expected at 4–6 years of Salesforce experience.
+
+---
+
+### List Questions
+
+---
+
+**Q1. What happens when you call `get()` on an index that doesn't exist?**
+
+**Ans:** Salesforce throws `System.ListException: 'List index out of bounds: N'`. To prevent this, always check `isEmpty()` and validate that the index is within range (`0` to `size()-1`) before accessing. A common defensive pattern:
+
+```apex
+if (!myList.isEmpty() && myList.size() > targetIndex) {
+    myList.get(targetIndex);
+}
+```
+
+---
+
+**Q2. What is the difference between `add(element)` and `set(index, element)`?**
+
+**Ans:** `add(element)` appends a new element at the **END** of the list — the size increases by 1. `set(index, element)` **REPLACES** the existing element at a specific index — size stays the same. Using `set()` on an out-of-range index also throws `ListException`. Use `add()` to grow the list, `set()` to update in-place.
+
+---
+
+**Q3. How would you remove duplicates from a List in Apex?**
+
+**Ans:** Convert List to Set — Set automatically removes duplicates. Then convert back to List if needed:
+
+```apex
+Set<String>  uniqueSet = new Set<String>(myList);
+List<String> deduped   = new List<String>(uniqueSet);
+```
+
+Note: converting to a Set **loses the original ordering**. If order matters, you need to manually iterate and check `contains()` before adding to a result List.
+
+---
+
+**Q4. What is the difference between `clone()` on a List and just assigning to a new variable?**
+
+**Ans:** Assignment (`List<String> copy = original`) creates a **reference** — both variables point to the SAME object in memory. Modifying `copy` also modifies `original`. `clone()` creates a **shallow copy** — a new List object with the same elements. Modifying the new list does not affect the original. However, `clone()` is shallow — for a List of sObjects, the records themselves are still shared references.
+
+---
+
+**Q5. How does SOQL interact with List? What is the governor limit?**
+
+**Ans:** Any SOQL query returns a `List<sObject>`. The governor limit is **50,000 rows** returned per transaction. The limit is **100 SOQL queries** per synchronous transaction (200 async). To avoid hitting these: never write SOQL inside a `for` loop, use `WHERE IN` with a Set/List of IDs to batch queries, and use `Database.QueryLocator` in Batch Apex for large datasets.
+
+---
+
+### Set Questions
+
+---
+
+**Q6. Why does Salesforce recommend using `Set<Id>` instead of `List<Id>` when passing IDs to a SOQL `WHERE IN` clause?**
+
+**Ans:** `Set<Id>` automatically prevents duplicate IDs — duplicates in a `WHERE IN` clause are wasteful but harmless; however, accidentally having duplicate IDs in code is usually a bug. `Set<Id>` can be used directly in SOQL `WHERE IN` without conversion: `[SELECT Id FROM Account WHERE Id IN :accountIdSet]`. Using a Set makes the developer's intent clear — these are unique identifiers.
+
+---
+
+**Q7. Can a Set contain `null`? What happens if you add `null` twice?**
+
+**Ans:** Yes — a Set can contain **one** `null` value. Adding `null` a second time is silently ignored since `null` is a duplicate. Calling `contains(null)` returns `true` if null was added. This behavior is consistent with Java's `HashSet`. Be careful when iterating a Set that might contain `null` — always null-check before using the value.
+
+---
+
+**Q8. What is the difference between `removeAll()` and `retainAll()` on a Set?**
+
+**Ans:** `removeAll(collection)` removes all elements from the current Set that are also present in the given collection — effectively "Set A minus Set B". `retainAll(collection)` keeps ONLY the elements that are present in BOTH sets — effectively the **intersection**. Example: `setA = {1,2,3,4}`; `setB = {2,4}`; `setA.retainAll(setB)` → `{2,4}`; `setA.removeAll(setB)` → `{1,3}`.
+
+---
+
+### Map Questions
+
+---
+
+**Q9. What happens if you call `put()` with a key that already exists in the Map?**
+
+**Ans:** The new value **OVERWRITES** the old value silently — no error or exception. The key count stays the same (no new key is added). This is why you should always call `containsKey()` before `put()` when you want to preserve existing values:
+
+```apex
+if (!myMap.containsKey(key)) { myMap.put(key, value); }
+```
+
+When grouping records by key, use the get-check-put-back pattern to aggregate rather than overwrite.
+
+---
+
+**Q10. Explain the `Map<Id, SObject>` pattern and why it is critical in Apex triggers.**
+
+**Ans:** When a trigger fires on N records, you often need related parent record data. Without this pattern, a developer might write a SOQL inside the loop — 1 query per record = governor limit violation at 101 records. The pattern: (1) Collect all parent IDs into a `Set<Id>` by iterating `Trigger.new`. (2) Run ONE SOQL `WHERE Id IN :parentIdSet` and wrap it in a `Map<Id, ParentObject>()` constructor. (3) Inside the loop, use `parentMap.get(record.ParentId)` for O(1) lookup — no nested SOQL. This reduces N queries to 1.
+
+---
+
+**Q11. What is the difference between `keySet()` and `values()` on a Map?**
+
+**Ans:** `keySet()` returns a `Set<KeyType>` — all unique keys in the Map. Since Map keys are unique, the result is always a Set. Modifying the returned Set may affect the Map (it's a view, not a copy). `values()` returns a `List<ValueType>` — all values in the Map in no guaranteed order. Duplicates are possible in the values list. To safely iterate: use `for (KeyType k : myMap.keySet())` and access `myMap.get(k)` inside the loop.
+
+---
+
+**Q12. How would you group a list of Contacts by `AccountId` using a Map?**
+
+**Ans:** Use `Map<Id, List<Contact>>`:
+
+```apex
+Map<Id, List<Contact>> accContactMap = new Map<Id, List<Contact>>();
+
+for (Contact c : contactList) {
+    if (!accContactMap.containsKey(c.AccountId)) {
+        accContactMap.put(c.AccountId, new List<Contact>());
+    }
+    accContactMap.get(c.AccountId).add(c);
+}
+```
+
+This groups all Contacts under their parent Account. Then iterate the `keySet()` to process each account's contacts together. This pattern is fundamental in trigger logic.
+
+---
+
+**Q13. Can a Map have a `null` key? Can it have a `null` value?**
+
+**Ans:** Yes — a Map can have **one** `null` key and **multiple** `null` values. `put(null, 'value')` is valid. `get(null)` returns the value stored for the null key. This is different from Java where `HashMap` permits null keys, but `ConcurrentHashMap` does not. In Salesforce, be very careful with null keys — typically use `containsKey(null)` check before accessing. Null values are common when a field is not populated on the record.
+
+---
+
+**Q14. What is the most efficient way to count occurrences of elements in a List?**
+
+**Ans:** Use `Map<String, Integer>` as a frequency counter:
+
+```apex
+Map<String, Integer> countMap = new Map<String, Integer>();
+
+for (String item : myList) {
+    if (countMap.containsKey(item)) {
+        countMap.put(item, countMap.get(item) + 1);
+    } else {
+        countMap.put(item, 1);
+    }
+}
+```
+
+After the loop, `countMap` gives you `item → count`. For example, counting duplicate Account industries, classifying contact sources, or finding the most common value in a dataset.
+
+---
+
+**Q15. In a trigger, `Trigger.newMap` and `Trigger.oldMap` are provided. When would you use each?**
+
+**Ans:** `Trigger.newMap`: `Map<Id, SObject>` of the records in their **NEW** state (after the change). Available in `before insert` (IDs assigned), `before update`, `after insert`, `after update`. `Trigger.oldMap`: `Map<Id, SObject>` of the records in their **OLD** state (before the change). Only available in `update` and `delete` contexts. Common use case: detect if a field changed:
+
+```apex
+if (Trigger.newMap.get(id).Status__c != Trigger.oldMap.get(id).Status__c) {
+    // field changed — the Map makes this O(1) per record comparison
+}
+```
+
+---
+
+### Advanced & Design Questions
+
+---
+
+**Q16. What is a `Map<String, List<String>>` and when would you use it in real Salesforce projects?**
+
+**Ans:** A Map where each key maps to a List of values — a one-to-many relationship stored in memory. Real use cases: (1) Country → States list for a dependent picklist in LWC. (2) `AccountId` → List of related Contact names for batch processing. (3) Error type → List of failed record IDs for error reporting. (4) Field name → List of validation messages. Pattern to add to an existing entry: get the list, add to it, put it back — checking `containsKey()` first.
+
+---
+
+**Q17. How would you deduplicate a `List<Account>` where duplicates are based on Account Name?**
+
+**Ans:** Use `Map<String, Account>`:
+
+```apex
+Map<String, Account> uniqueAccounts = new Map<String, Account>();
+
+for (Account acc : accountList) {
+    if (!uniqueAccounts.containsKey(acc.Name)) {
+        uniqueAccounts.put(acc.Name, acc);
+    }
+}
+
+List<Account> deduped = uniqueAccounts.values();
+```
+
+This keeps the **FIRST** occurrence of each Name. If you want the **LAST**, remove the `containsKey` check and just `put()` unconditionally (later entries overwrite earlier ones).
+
+---
+
+**Q18. What are the memory limits for Collections in Apex and how do they affect design?**
+
+**Ans:** Heap memory limit: **6 MB** synchronous, **12 MB** asynchronous. A `List<String>` with 50,000 strings of average 50 characters each ≈ 2.5 MB. A `Map<Id, Account>` with 10,000 Account records with 20 fields could approach the limit. Design implications: (1) Never query more fields than needed — `SELECT` only what you use. (2) Avoid storing large collections as instance variables in Batch Apex (prefer `Database.Stateful` only for counts, not full record collections). (3) Process records in chunks. (4) Use `System.currentPageReference()` for monitoring in long operations.
+
+---
+
+## 8. Quick Reference Cheat Sheet
+
+### List — Essential Patterns
+
+```apex
+List<String> list = new List<String>{'a','b','c'};
+
+list.add('d');          // append
+list.set(0, 'z');       // replace at index 0
+list.get(1);            // 'b'
+list.remove(2);         // remove 'c'
+list.size();            // 3
+list.isEmpty();         // false
+list.sort();            // sort ascending
+list.contains('b');     // true
+list.clear();           // empty the list
+list.indexOf('b');      // returns index or -1
+list.subList(0, 2);     // ['a','b'] (0 inclusive, 2 exclusive)
+```
+
+---
+
+### Set — Essential Patterns
+
+```apex
+Set<String> s = new Set<String>{'X','Y','Z','X'};  // auto-dedup: {X,Y,Z}
+
+s.add('W');             // add new
+s.contains('X');        // true
+s.remove('Y');          // remove
+s.size();               // 3
+s.isEmpty();            // false
+s.addAll(anotherSet);   // merge
+s.clear();              // empty
+
+// Convert List → Set (deduplicate)
+Set<String>  unique     = new Set<String>(myList);
+
+// Convert Set → List (for DML / SOQL)
+List<String> backToList = new List<String>(mySet);
+```
+
+---
+
+### Map — Essential Patterns
+
+```apex
+Map<String,Integer> m = new Map<String,Integer>{'A'=>1,'B'=>2};
+
+m.put('C', 3);          // add/overwrite
+m.get('A');             // 1
+m.containsKey('B');     // true
+m.remove('A');          // remove key
+m.keySet();             // Set<String>: {A,B,C}
+m.values();             // List<Integer>: [1,2,3]
+m.size();               // 3
+m.isEmpty();            // false
+m.putAll(anotherMap);   // merge maps
+m.clear();              // empty
+
+// SOQL → Map (trigger pattern)
+Map<Id,Account> accMap = new Map<Id,Account>([SELECT Id,Name FROM Account]);
+Account a = accMap.get(someId);  // O(1) lookup
+```
+
+---
+
+### Governor Limits for Collections
+
+| Governor Limit | Value |
+|---------------|-------|
+| **SOQL rows per transaction** | 50,000 |
+| **SOQL queries (sync)** | 100 |
+| **SOQL queries (async)** | 200 |
+| **DML rows per transaction** | 10,000 |
+| **Heap memory (sync)** | 6 MB |
+| **Heap memory (async)** | 12 MB |
+| **List max elements (practical)** | 50,000 *(heap dependent)* |
+
+---
