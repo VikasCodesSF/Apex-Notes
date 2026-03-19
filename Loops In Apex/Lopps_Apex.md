@@ -794,7 +794,7 @@ System.debug(items);  // (A, C)
 
 ---
 
-## PART 9 — ASSIGNMENT SOLUTIONS *(From PDF Day 4.2)*
+## PART 9 — ASSIGNMENT SOLUTIONS
 
 The following code solves all 5 assignment tasks from the PDF, incorporating Salesforce certifications as the data and demonstrating all loop types.
 
