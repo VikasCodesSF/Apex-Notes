@@ -1,4 +1,3 @@
-# ⚡ SwiftNotes | Salesforce Apex
 # COLLECTIONS: List, Set & Map
 ### Comprehensive Notes + 5-Year Experience Interview Questions
 
